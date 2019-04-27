@@ -1,3 +1,4 @@
+from aiogram.types import Message
 from peewee import SqliteDatabase, Model, IntegerField, TextField, DateTimeField
 
 
@@ -11,3 +12,10 @@ class Chat(BaseClass):
     name = TextField()
     last_message_id = IntegerField()
     last_crack = DateTimeField(null=True)
+
+    @classmethod
+    def get_by_message(cls, message: Message):
+        chat = Chat.get_or_create(chat_id=message.chat.id,
+                                  name=message.chat.full_name,
+                                  last_message_id=message.message_id)
+
