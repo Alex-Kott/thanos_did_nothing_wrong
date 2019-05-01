@@ -82,7 +82,7 @@ async def crack_handler(message: Message):
     if chat.last_crack is None:
         pass
     elif chat.last_crack > (datetime.now() - timedelta(hours=8)):
-        await message.reply("The time is not come yet")
+        await message.reply("The time has not come yet")
         return
 
     keyboard = InlineKeyboardMarkup()
