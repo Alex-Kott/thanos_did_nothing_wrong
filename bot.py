@@ -2,20 +2,21 @@ import json
 import logging
 from asyncio import sleep
 from datetime import datetime, timedelta
-
-from random import randint
+from string import punctuation
+from typing import List
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message, ContentType, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, \
     InputMediaAnimation, InputMediaPhoto
 from aiogram.utils import executor
-from aiogram.utils.exceptions import MessageToDeleteNotFound, MessageCantBeDeleted
 from aiohttp import BasicAuth
 import requests
 from requests.exceptions import ConnectionError
+from nltk.corpus import stopwords
+from pymystem3 import Mystem
 
 from config import BOT_TOKEN, PROXY_HOST, PROXY_PASS, PROXY_PORT, PROXY_USERNAME
-from models import Chat
+from models import Chat, Ban
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -37,6 +38,8 @@ dp = Dispatcher(bot)
 
 def init():
     Chat.create_table(fail_silently=True)
+    Ban.create_table(fail_silently=True)
+    Ban.get_or_create(id=1)
 
 
 @dp.message_handler(commands=['ping'])
@@ -64,16 +67,6 @@ async def callback_handler(callback: CallbackQuery):
 
     await sleep(3)
 
-    for i in range(chat.last_message_id, chat.last_message_id-100, -1):
-        if randint(1, 2) == 2:
-            await sleep(1)
-            try:
-                await bot.delete_message(chat_id=chat.id, message_id=i)
-            except MessageToDeleteNotFound:
-                pass
-            except MessageCantBeDeleted:
-                pass
-
 
 @dp.message_handler(commands=['crack', 'snap'])
 async def crack_handler(message: Message):
@@ -96,10 +89,40 @@ async def crack_handler(message: Message):
         await bot.send_photo(chat.id, file, reply_markup=keyboard)
 
 
+def get_lemmatized_tokens(text: str) -> List[str]:
+    mystem = Mystem()
+    russian_stopwords = stopwords.words("russian")
+
+    tokens = mystem.lemmatize(text.lower())
+    tokens = [token for token in tokens if
+              token not in russian_stopwords and token != " " and token.strip() not in punctuation]
+
+    return tokens
+
+
+async def ban_user(chat_id: int, user_id: int):
+    ban = Ban.get(id=1)
+    ban_expire_date = datetime.utcnow() + timedelta(minutes=ban.duration)
+    await bot.restrict_chat_member(chat_id=chat_id, user_id=user_id,
+                                   until_date=int(ban_expire_date.timestamp()),
+                                   can_send_messages=False)
+    ban.duration += 1
+    ban.save()
+
+
+async def squizduos_snova_naprosilsa(message: Message) -> None:
+    if message.from_user.id == 57439615:
+        lemmatized_tokens = get_lemmatized_tokens(message.text)
+        if "напоминание" in set(lemmatized_tokens):
+            await ban_user(message.chat.id, message.from_user.id)
+
+
 @dp.message_handler(content_types=[ContentType.TEXT])
 async def text_handler(message: Message):
     Chat.get_by_message(message)
     logger.info(message)
+
+    await squizduos_snova_naprosilsa(message)
 
 
 if __name__ == "__main__":

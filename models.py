@@ -30,3 +30,7 @@ class Chat(BaseClass):
     def get_by_callback(cls, callback: CallbackQuery):
 
         return Chat.get(id=callback.message.chat.id)
+
+
+class Ban(BaseClass):
+    duration = IntegerField(default=1)
