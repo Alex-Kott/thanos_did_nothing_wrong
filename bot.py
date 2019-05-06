@@ -89,6 +89,11 @@ async def crack_handler(message: Message):
         await bot.send_photo(chat.id, file, reply_markup=keyboard)
 
 
+@dp.message_handler(commands=['spoiler'])
+async def pin_spoiler(message: Message):
+    await bot.pin_chat_message(chat_id=message.chat.id, message_id=message.reply_to_message.message_id)
+
+
 def get_lemmatized_tokens(text: str) -> List[str]:
     mystem = Mystem()
     russian_stopwords = stopwords.words("russian")
