@@ -123,12 +123,18 @@ async def squizduos_snova_naprosilsa(message: Message) -> None:
             await ban_user(message.chat.id, message.from_user.id)
 
 
+async def irek_lose(message: Message) -> None:
+    if message.from_user.id == 78911822:
+        await message.reply('Ты сейчас проиграл')
+
+
 @dp.message_handler(content_types=[ContentType.TEXT])
 async def text_handler(message: Message):
     Chat.get_by_message(message)
     logger.info(message)
 
     await squizduos_snova_naprosilsa(message)
+    await irek_lose(message)
 
 
 if __name__ == "__main__":
