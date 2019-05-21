@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from asyncio import sleep
 from datetime import datetime, timedelta
 from string import punctuation
@@ -123,12 +124,27 @@ async def squizduos_snova_naprosilsa(message: Message) -> None:
             await ban_user(message.chat.id, message.from_user.id)
 
 
+def is_dr_greetings(text: str) -> bool:
+    match = re.search(r'(?<=/s_dr_)@\S+', text)
+    if match:
+        return match.group(0)
+
+
+async def s_dr(message: Message) -> None:
+    birthday_guy = is_dr_greetings(message.text)
+    if birthday_guy:
+        sended_message = await message.reply(birthday_guy)
+        await sleep(0.3)
+        await sended_message.delete()
+
+
 @dp.message_handler(content_types=[ContentType.TEXT])
 async def text_handler(message: Message):
     Chat.get_by_message(message)
     logger.info(message)
 
     await squizduos_snova_naprosilsa(message)
+    await s_dr(message)
 
 
 if __name__ == "__main__":
